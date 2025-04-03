@@ -3,10 +3,10 @@ const PersonForm = ({
   newNumber,
   onNameChange,
   onNumberChange,
-  onClick,
+  onSubmit,
 }) => {
   return (
-    <form>
+    <form onSubmit={(e) => onSubmit(e)}>
       <div>
         <label htmlFor="name">name: </label>
         <input
@@ -28,9 +28,7 @@ const PersonForm = ({
         />
       </div>
       <div>
-        <button onClick={(e) => onClick(e)} type="submit">
-          add
-        </button>
+        <button type="submit">add</button>
       </div>
     </form>
   );

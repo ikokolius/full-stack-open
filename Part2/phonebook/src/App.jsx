@@ -1,20 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import personsService from './services/persons.js';
 import PersonForm from './components/PersonForm';
 import Filter from './components/Filter';
 import Persons from './components/Persons';
-
-const dummyContacts = [
-  { name: 'Arto Hellas', number: '040-123456', id: 1 },
-  { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
-  { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
-  { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 },
-];
+import Notification from './components/Notification.jsx';
 
 const App = () => {
-  const [persons, setPersons] = useState(dummyContacts);
+  const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState('');
   const [newNumber, setNewNumber] = useState('');
   const [search, setSearch] = useState('');
+  const [notification, setNotification] = useState({
+    message: null,
+    type: 'success',
+  });
 
   const filteredPersons =
     search === ''
@@ -22,6 +21,19 @@ const App = () => {
       : persons.filter((p) =>
           p.name.toLowerCase().includes(search.toLowerCase())
         );
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const initialPersons = await personsService.getAll();
+        setPersons(initialPersons);
+      } catch (e) {
+        console.error(e.message);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleNewNameChange = (value) => {
     setNewName(value);
@@ -35,28 +47,104 @@ const App = () => {
     setSearch(value);
   };
 
-  const addContact = (e) => {
-    e.preventDefault();
+  const resetForm = () => {
+    setNewName('');
+    setNewNumber('');
+  };
 
-    if (persons.findIndex((p) => p.name === newName) !== -1) {
+  const showNotificationTemporarily = (message, type, time = 5000) => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification({ ...notification, message: null });
+    }, time);
+  };
+
+  const updateNumber = (personToUpdate) => {
+    const changedPerson = { ...personToUpdate, number: newNumber };
+
+    personsService
+      .updatePerson(personToUpdate.id, changedPerson)
+      .then((returnedPerson) => {
+        setPersons(
+          persons.map((p) => (p.id === returnedPerson.id ? returnedPerson : p))
+        );
+        resetForm();
+      })
+      .catch((e) => {
+        const message =
+          e.status === 404
+            ? `Information of ${personToUpdate.name} has already been removed from server`
+            : 'Something went wrong';
+
+        showNotificationTemporarily(message, 'error');
+        if (e.status === 404) {
+          setPersons(persons.filter((p) => p.id !== personToUpdate.id));
+          resetForm();
+        }
+      });
+  };
+
+  const actOnDuplicate = (duplicatePerson) => {
+    if (newNumber !== '') {
+      const replace = confirm(
+        `${newName} is already added to phonebook, replace the old number with a new one?`
+      );
+      if (replace) {
+        updateNumber(duplicatePerson);
+      }
+    } else {
       alert(`${newName} is already added to phonebook`);
+    }
+  };
+
+  const addPerson = (e) => {
+    e.preventDefault();
+    if (!newName) {
+      alert('Please provide a name');
       return;
     }
 
-    setPersons(
-      persons.concat({
-        id: persons.length + 1,
-        name: newName,
-        number: newNumber,
+    const duplicatePerson = persons.find((p) => p.name === newName);
+
+    if (duplicatePerson) {
+      actOnDuplicate(duplicatePerson);
+      return;
+    }
+
+    const newPerson = {
+      id: String(Number(persons.at(-1).id) + 1),
+      name: newName,
+      number: newNumber,
+    };
+
+    personsService
+      .createPerson(newPerson)
+      .then((createdPerson) => {
+        showNotificationTemporarily(`Added ${newPerson.name}`, 'success');
+        setPersons(persons.concat(createdPerson));
+        resetForm();
       })
-    );
-    setNewName('');
-    setNewNumber('');
+      .catch((e) => {
+        showNotificationTemporarily(`Failed saving ${newPerson.name}`, 'error');
+        console.error(e);
+      });
+  };
+
+  const deletePerson = async (id) => {
+    try {
+      const response = await personsService.deletePerson(id);
+      setPersons(persons.filter((p) => p.id !== response.id));
+    } catch (e) {
+      const person = persons.find((p) => p.id === id);
+      showNotificationTemporarily(`Failed deleting ${person.name}`, 'error');
+      console.error(e);
+    }
   };
 
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification notification={notification} />
       <Filter search={search} onSearchChange={handleSearchChange} />
       <h3>Add new contact</h3>
       <PersonForm
@@ -64,10 +152,10 @@ const App = () => {
         newNumber={newNumber}
         onNameChange={handleNewNameChange}
         onNumberChange={handleNewNumberChange}
-        onClick={addContact}
+        onSubmit={addPerson}
       />
       <h3>Numbers</h3>
-      <Persons persons={filteredPersons} />
+      <Persons persons={filteredPersons} onDelete={deletePerson} />
     </div>
   );
 };
