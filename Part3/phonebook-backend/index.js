@@ -26,7 +26,7 @@ let persons = [
 
 const app = express();
 app.use(express.json());
-
+app.use(cors());
 morgan.token('content', function (req, _res) {
   return JSON.stringify(req.body);
 });
