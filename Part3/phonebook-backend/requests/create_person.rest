@@ -1,0 +1,42 @@
+# good request
+POST http://localhost:3001/api/persons
+content-type: application/json
+
+{
+    "name": "Susan Qintz",
+    "number": "123-456-789"
+}
+
+###
+
+# empty name
+POST http://localhost:3001/api/persons
+content-type: application/json
+
+{
+    "name": "",
+    "number": "123-456-789"
+}
+
+###
+
+# empty number
+POST http://localhost:3001/api/persons
+content-type: application/json
+
+{
+    "name": "Hanna Montana",
+    "number": ""
+}
+
+###
+
+# name already exists
+POST http://localhost:3001/api/persons
+content-type: application/json
+
+{
+    "name": "Arto Hellas",
+    "number": "312425434"
+}
+
