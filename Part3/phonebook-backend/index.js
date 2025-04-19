@@ -1,6 +1,10 @@
 import express from 'express';
 import morgan from 'morgan';
-import cors from 'cors';
+import 'dotenv/config';
+import Person from './models/person.js';
+
+// After using proxy in vite.config.js, from the frontend's perspective all requests are made to http://localhost:5173, which is the single origin, there is no longer a need for the backend's cors middleware.
+//import cors from 'cors';
 
 let persons = [
   {
@@ -28,7 +32,7 @@ let persons = [
 const app = express();
 app.use(express.static('dist'));
 app.use(express.json());
-app.use(cors());
+// app.use(cors());
 morgan.token('content', function (req, _res) {
   return JSON.stringify(req.body);
 });
@@ -45,11 +49,15 @@ app.get('/info', (_req, res) => {
   res.send(info);
 });
 
-app.get('/api/persons', (_req, res) => {
-  res.json(persons);
+app.get('/api/people', (_req, res) => {
+  // res.json(persons);
+  // MongoDB
+  Person.find({}).then((people) => {
+    res.json(people);
+  });
 });
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/people/:id', (req, res) => {
   const id = req.params.id;
   const person = persons.find((p) => p.id === id);
   if (person) {
@@ -59,13 +67,13 @@ app.get('/api/persons/:id', (req, res) => {
   }
 });
 
-app.delete('/api/persons/:id', (req, res) => {
+app.delete('/api/people/:id', (req, res) => {
   const id = req.params.id;
   persons = persons.filter((p) => p.id !== id);
   res.status(204).end();
 });
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/people', (req, res) => {
   const name = req.body.name;
   const number = req.body.number;
   const duplicateName = persons.some((p) => p.name === name);
@@ -85,7 +93,7 @@ app.post('/api/persons', (req, res) => {
   res.status(201).json(newPerson);
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
