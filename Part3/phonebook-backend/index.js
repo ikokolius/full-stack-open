@@ -3,9 +3,6 @@ import morgan from 'morgan';
 import 'dotenv/config';
 import Person from './models/person.js';
 
-// After using proxy in vite.config.js, from the frontend's perspective all requests are made to http://localhost:5173, which is the single origin, there is no longer a need for the backend's cors middleware.
-//import cors from 'cors';
-
 let persons = [
   {
     id: '1',
@@ -32,7 +29,6 @@ let persons = [
 const app = express();
 app.use(express.static('dist'));
 app.use(express.json());
-// app.use(cors());
 morgan.token('content', function (req, _res) {
   return JSON.stringify(req.body);
 });
@@ -50,11 +46,7 @@ app.get('/info', (_req, res) => {
 });
 
 app.get('/api/people', (_req, res) => {
-  // res.json(persons);
-  // MongoDB
-  Person.find({}).then((people) => {
-    res.json(people);
-  });
+  res.json(persons);
 });
 
 app.get('/api/people/:id', (req, res) => {
