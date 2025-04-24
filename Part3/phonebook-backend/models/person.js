@@ -18,10 +18,34 @@ mongoose
   });
 
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
+  // name: String,
+  // number: String
+  name: {
+    type: String,
+    minLength: [3, 'Name must be at least 3 characters long'],
+    required: true,
+    // or with custom error message
+    // required: [true, 'Name is required'],
+  },
+  number: {
+    type: String,
+    required: true,
+    // required: [true, 'Phone number is required'],
+    // match: [
+    //   /^(\()?\d{3}(\))?(-|\s)?\d{3}(-|\s)?\d{4}$/,
+    //   'Please fill a valid phone number',
+    // ],
+    minLength: [8, 'Phone number must be at least 8 characters long'],
+    validate: {
+      validator: function (v) {
+        return /^\d{2,3}-\d{4,}$/.test(v);
+      },
+      message: (props) => `${props.value} is not a valid phone number!`,
+    },
+  },
 });
 
+// One way to format the objects returned by Mongoose is to modify the toJSON method of the schema, which is used on all instances of the models produced with that schema.
 personSchema.set('toJSON', {
   transform: (_document, returnedObject) => {
     returnedObject.id = returnedObject._id.toString();

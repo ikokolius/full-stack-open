@@ -1,5 +1,5 @@
 # good request
-POST http://localhost:3001/api/persons
+POST http://localhost:3001/api/people
 content-type: application/json
 
 {
@@ -10,7 +10,7 @@ content-type: application/json
 ###
 
 # empty name
-POST http://localhost:3001/api/persons
+POST http://localhost:3001/api/people
 content-type: application/json
 
 {
@@ -21,7 +21,7 @@ content-type: application/json
 ###
 
 # empty number
-POST http://localhost:3001/api/persons
+POST http://localhost:3001/api/people
 content-type: application/json
 
 {
@@ -32,7 +32,7 @@ content-type: application/json
 ###
 
 # name already exists
-POST http://localhost:3001/api/persons
+POST http://localhost:3001/api/people
 content-type: application/json
 
 {
