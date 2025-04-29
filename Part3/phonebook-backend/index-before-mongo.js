@@ -28,7 +28,7 @@ let people = [
 const app = express();
 app.use(express.static('dist'));
 app.use(express.json());
-morgan.token('content', function (req, _res) {
+morgan.token('content', function (req) {
   return JSON.stringify(req.body);
 });
 // app.use(morgan('tiny'));
@@ -67,14 +67,11 @@ app.delete('/api/people/:id', (req, res) => {
 app.post('/api/people', (req, res) => {
   const name = req.body.name;
   const number = req.body.number;
-  const duplicateName = people.some((p) => p.name === name);
 
-  if (!name || !number || duplicateName) {
+  if (!name || !number) {
     const errorMessage = !name
       ? 'name is not provided'
-      : !number
-      ? 'number is not provided'
-      : 'name must be unique';
+      : 'number is not provided';
     return res.status(400).json({ error: errorMessage });
   }
 

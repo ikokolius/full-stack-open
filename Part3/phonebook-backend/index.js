@@ -5,17 +5,13 @@ import Person from './models/person.js';
 
 const app = express();
 // handler of requests with unknown endpoint
-const unknownEndpoint = (_request, response) => {
+const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' });
 };
-const errorHandler = (error, _request, response, next) => {
-  console.error(error.message);
-  console.log('error name:', error.name);
-
+const errorHandler = (error, request, response, next) => {
   if (error.name === 'CastError') {
-    return response.status(400).send({ error: 'malformatted id' });
+    return response.status(400).json({ error: 'malformatted id' });
   } else if (error.name === 'ValidationError') {
-    console.log(error.errors['name']);
     if (error.errors['name']) {
       return response.status(400).json({ error: error.errors['name'].message });
     } else if (error.errors['number']) {
@@ -42,25 +38,22 @@ app.use(
   )
 );
 
-app.get('/info', async (_request, response) => {
+app.get('/info', (request, response, next) => {
   const requestTime = new Date().toString();
-  try {
-    const count = await Person.countDocuments({});
-    const info = `<p>Phonebook has info for ${count} people</p><p>${requestTime}</p>`;
-    response.send(info);
-  } catch (error) {
-    response.status(500).json({ error: 'Failed to retrieve information' });
-  }
+  Person.countDocuments({})
+    .then((count) => {
+      const info = `<p>Phonebook has info for ${count} people</p><p>${requestTime}</p>`;
+      response.send(info);
+    })
+    .catch((error) => next(error));
 });
 
-app.get('/api/people', async (_request, response) => {
-  try {
-    const people = await Person.find({});
-    response.json(people);
-  } catch (error) {
-    console.error('Error fetching people:', error);
-    response.status(500).json({ error: 'Failed to fetch people' });
-  }
+app.get('/api/people', (request, response, next) => {
+  Person.find({})
+    .then((people) => {
+      response.json(people);
+    })
+    .catch((error) => next(error));
 });
 
 app.get('/api/people/:id', (request, response, next) => {
@@ -75,66 +68,43 @@ app.get('/api/people/:id', (request, response, next) => {
     .catch((error) => next(error));
 });
 
-app.delete('/api/people/:id', async (request, response, next) => {
-  const id = request.params.id;
-  try {
-    const deletedPerson = await Person.findByIdAndDelete(id);
-    if (!deletedPerson) {
-      return response.status(404).json({ error: 'Person not found' });
-    }
-    response.status(204).json(deletedPerson);
-  } catch (error) {
-    // console.error('Error deleting person:', error);
-    // response.status(500).json({ error: 'Failed to delete person' });
-    next(error);
-  }
+app.delete('/api/people/:id', (request, response, next) => {
+  Person.findByIdAndDelete(request.params.id)
+    .then(() => {
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
 });
 
-app.post('/api/people', async (request, response, next) => {
-  const name = request.body.name.trim();
-  const number = request.body.number.trim();
-
-  if (!name || !number) {
-    const errorMessage = !name
-      ? 'name is not provided'
-      : 'number is not provided';
-    return response.status(400).json({ error: errorMessage });
-  }
-
+app.post('/api/people', (request, response, next) => {
+  const name = request.body.name;
+  const number = request.body.number;
   const newPerson = new Person({ name, number });
-
-  try {
-    const savedPerson = await newPerson.save();
-    response.status(201).json(savedPerson);
-  } catch (error) {
-    // console.error('Error saving person:', error);
-    // response.status(500).json({ error: 'Failed to save person' });
-    next(error);
-  }
+  newPerson
+    .save()
+    .then((savedPerson) => {
+      response.status(201).json(savedPerson);
+    })
+    .catch((error) => next(error));
 });
 
-app.put('/api/people/:id', async (request, response, next) => {
+app.put('/api/people/:id', (request, response, next) => {
   const id = request.params.id;
-  const name = request.body.name.trim();
-  const number = request.body.number.trim();
-
-  try {
-    const person = await Person.findById(id);
-
-    if (!person) {
-      // return response.status(404).end();
-      return response.status(404).json({ error: 'Person not found' });
-    }
-
-    person.name = name;
-    person.number = number;
-    const savedPerson = await person.save();
-    response.json(savedPerson);
-  } catch (error) {
-    // console.error('Error updating person:', error);
-    // response.status(500).json({ error: 'Failed to update person' });
-    next(error);
-  }
+  const number = request.body.number;
+  Person.findById(id)
+    .then((person) => {
+      if (!person) {
+        return response.status(404).end();
+      }
+      person.number = number;
+      person
+        .save()
+        .then((savedPerson) => {
+          response.status(200).json(savedPerson);
+        })
+        .catch((error) => next(error));
+    })
+    .catch((error) => next(error));
 });
 
 // It's also important that the middleware for handling unsupported routes is loaded only after all the endpoints have been defined
