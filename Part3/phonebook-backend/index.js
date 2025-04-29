@@ -4,10 +4,11 @@ import 'dotenv/config';
 import Person from './models/person.js';
 
 const app = express();
-// handler of requests with unknown endpoint
+
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' });
 };
+
 const errorHandler = (error, request, response, next) => {
   if (error.name === 'CastError') {
     return response.status(400).json({ error: 'malformatted id' });
@@ -25,8 +26,8 @@ const errorHandler = (error, request, response, next) => {
 };
 
 app.use(express.static('dist'));
-// The json-parser middleware should be among the very first middleware loaded into Express
 app.use(express.json());
+
 // logging with morgan
 morgan.token('content', function (request) {
   return JSON.stringify(request.body);
@@ -107,10 +108,7 @@ app.put('/api/people/:id', (request, response, next) => {
     .catch((error) => next(error));
 });
 
-// It's also important that the middleware for handling unsupported routes is loaded only after all the endpoints have been defined
 app.use(unknownEndpoint);
-
-// this has to be the last loaded middleware, also all the routes should be registered before this!
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
